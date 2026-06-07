@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Interview Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0d0f14;--surface:#161921;--surface2:#1e2230;--border:#2a2f3d;
+    --accent:#4f8ef7;--accent2:#7c3aed;--text:#e8eaf0;--muted:#7a7f94;
+    --green:#22c55e;--red:#ef4444;--radius:12px;
+  }
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:var(--surface)}
+  .logo{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--text);letter-spacing:-0.5px}
+  .logo span{color:var(--accent)}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;box-shadow:0 0 6px var(--green)}
+  .badge{font-size:12px;color:var(--muted);display:flex;align-items:center}
+  .main{display:flex;flex:1;overflow:hidden}
+  .sidebar{width:280px;border-right:1px solid var(--border);background:var(--surface);padding:1.5rem;display:flex;flex-direction:column;gap:1.5rem;flex-shrink:0}
+  .sidebar h3{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600}
+  .form-group{display:flex;flex-direction:column;gap:6px}
+  .form-group label{font-size:13px;color:var(--muted)}
+  .form-group input,.form-group textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;resize:none}
+  .form-group input:focus,.form-group textarea:focus{border-color:var(--accent)}
+  .form-group input::placeholder,.form-group textarea::placeholder{color:var(--muted)}
+  .btn{padding:10px 16px;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;transition:all .2s;border:none}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#3a7ae8}
+  .btn-primary:disabled{background:#2a3555;color:var(--muted);cursor:not-allowed}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+  .content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .tabs{display:flex;border-bottom:1px solid var(--border);padding:0 2rem;background:var(--surface)}
+  .tab{padding:1rem 1.25rem;font-size:14px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;margin-bottom:-1px}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab-panel{display:none;flex:1;overflow-y:auto;padding:2rem}
+  .tab-panel.active{display:flex;flex-direction:column;gap:1.5rem}
+  .auth-card{max-width:420px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;display:flex;flex-direction:column;gap:1rem}
+  .auth-card h2{font-family:'DM Serif Display',serif;font-size:1.5rem}
+  .auth-card p{font-size:13px;color:var(--muted)}
+  .auth-toggle{font-size:13px;color:var(--muted);text-align:center}
+  .auth-toggle a{color:var(--accent);cursor:pointer;text-decoration:none}
+  .session-header{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
+  .session-info h2{font-family:'DM Serif Display',serif;font-size:1.1rem}
+  .session-info p{font-size:13px;color:var(--muted);margin-top:2px}
+  .session-id{font-size:11px;background:var(--surface2);border:1px solid var(--border);padding:4px 10px;border-radius:20px;color:var(--muted);font-family:monospace}
+  .question-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;display:flex;flex-direction:column;gap:1rem}
+  .question-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);font-weight:600}
+  .question-text{font-size:1rem;line-height:1.6}
+  .feedback-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem}
+  .feedback-card h3{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:1rem;font-weight:600}
+  .score-row{display:flex;align-items:center;gap:12px;margin-bottom:1rem}
+  .score-circle{width:56px;height:56px;border-radius:50%;border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:600;color:var(--accent);flex-shrink:0}
+  .score-label{font-size:14px;color:var(--muted)}
+  .score-label strong{color:var(--text);display:block;margin-bottom:2px}
+  .feedback-section{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
+  .feedback-section h4{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;font-weight:600}
+  .feedback-section p{font-size:14px;line-height:1.7;color:var(--text)}
+  .history-list{display:flex;flex-direction:column;gap:8px}
+  .history-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;cursor:pointer;transition:border-color .2s}
+  .history-item:hover{border-color:var(--accent)}
+  .history-item .q{font-size:13px;color:var(--text);margin-bottom:4px}
+  .history-item .meta{font-size:12px;color:var(--muted)}
+  .empty-state{text-align:center;padding:4rem 2rem;color:var(--muted)}
+  .empty-state .icon{font-size:2.5rem;margin-bottom:1rem;opacity:.4}
+  .empty-state p{font-size:14px}
+  .alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:4px}
+  .alert-error{background:#2d0f0f;color:#fca5a5;border:1px solid #3d1414}
+  .alert-success{background:#14311f;color:#86efac;border:1px solid #1e4a2e}
+  .loader{display:inline-block;width:16px;height:16px;border:2px solid transparent;border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .report-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
+  .metric-card .val{font-size:2rem;font-weight:600;color:var(--accent);font-family:'DM Serif Display',serif}
+  .metric-card .lbl{font-size:12px;color:var(--muted);margin-top:4px}
+  .divider{border:none;border-top:1px solid var(--border)}
+  .user-chip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);padding:6px 12px;border-radius:20px;font-size:13px}
+  .avatar{width:26px;height:26px;border-radius:50%;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Interview<span>AI</span></div>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="badge"><span class="status-dot"></span>API Connected</div>
+    <div id="userChip" style="display:none" class="user-chip">
+      <div class="avatar" id="avatarInitials">H</div>
+      <span id="userEmail" style="color:var(--muted)">user</span>
+      <button onclick="logout()" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;margin-left:4px">Logout</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div>
+      <h3 style="margin-bottom:1rem">Session Setup</h3>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="form-group">
+          <label>Role Title</label>
+          <input id="roleTitle" placeholder="e.g. Software Engineer"/>
+        </div>
+        <div class="form-group">
+          <label>Job Description</label>
+          <textarea id="jobDesc" rows="4" placeholder="Paste JD or describe the role..."></textarea>
+        </div>
+        <button class="btn btn-primary" id="startBtn" onclick="startSession()" disabled>Start Interview</button>
+      </div>
+    </div>
+    <hr class="divider"/>
+    <div>
+      <h3 style="margin-bottom:1rem">Active Session</h3>
+      <div id="sessionInfo" style="font-size:13px;color:var(--muted)">No session active</div>
+    </div>
+    <div style="margin-top:auto">
+      <h3 style="margin-bottom:.75rem">Q&A History</h3>
+      <div id="historyList" class="history-list">
+        <div style="font-size:13px;color:var(--muted)">No questions yet</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('auth')" id="tab-auth">Account</div>
+      <div class="tab" onclick="switchTab('interview')" id="tab-interview">Interview</div>
+      <div class="tab" onclick="switchTab('report')" id="tab-report">Report</div>
+    </div>
+
+    <div class="tab-panel active" id="panel-auth">
+      <div class="auth-card" id="loginForm">
+        <h2>Welcome back</h2>
+        <p>Sign in to your account to start your interview session.</p>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="loginEmail" placeholder="you@example.com"/>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="••••••••"/>
+        </div>
+        <div id="loginAlert"></div>
+        <button class="btn btn-primary" onclick="login()">Sign In</button>
+        <div class="auth-toggle">Don't have an account? <a onclick="toggleAuthForm()">Register</a></div>
+      </div>
+      <div class="auth-card" id="registerForm" style="display:none">
+        <h2>Create account</h2>
+        <p>Register to get started with AI-powered interview prep.</p>
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="regName" placeholder="Harsh Upadhyay"/>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="regEmail" placeholder="you@example.com"/>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="regPassword" placeholder="••••••••"/>
+        </div>
+        <div id="registerAlert"></div>
+        <button class="btn btn-primary" onclick="register()">Create Account</button>
+        <div class="auth-toggle">Already have an account? <a onclick="toggleAuthForm()">Sign in</a></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-interview">
+      <div id="noSession" class="empty-state">
+        <div class="icon">🎯</div>
+        <p>Set your role and job description in the sidebar,<br/>then click <strong>Start Interview</strong> to begin.</p>
+      </div>
+      <div id="interviewArea" style="display:none;flex-direction:column;gap:1.5rem">
+        <div class="session-header">
+          <div class="session-info">
+            <h2 id="sessionRole">Role</h2>
+            <p id="sessionDesc">—</p>
+          </div>
+          <span class="session-id" id="sessionIdBadge">—</span>
+        </div>
+        <div class="question-card">
+          <div class="question-label">Current Question</div>
+          <div class="question-text" id="questionText">Click Generate to get an AI question based on your JD.</div>
+        </div>
+        <div class="form-group">
+          <label>Your Question</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="questionInput" placeholder="e.g. Tell me about yourself" style="flex:1"/>
+            <button class="btn btn-ghost" onclick="generateQuestion()" id="genBtn" style="white-space:nowrap;padding:10px 14px">Generate ✦</button>
+          </div>
+          <label>Your Answer</label>
+          <textarea id="answerInput" rows="5" placeholder="Type your answer here..."></textarea>
+        </div>
+        <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()">Get AI Feedback</button>
+        <div id="feedbackArea"></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-report">
+      <div id="noReport" class="empty-state">
+        <div class="icon">📊</div>
+        <p>Complete some interview questions to see your performance report.</p>
+      </div>
+      <div id="reportArea" style="display:none;flex-direction:column;gap:1.5rem">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem">
+          <h2 style="font-family:'DM Serif Display',serif;font-size:1.3rem;margin-bottom:1.5rem">Session Report</h2>
+          <div class="report-grid" id="reportMetrics"></div>
+        </div>
+        <div id="reportAnswers" style="display:flex;flex-direction:column;gap:1rem"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='http://localhost:8000/api/v1';
+const GROQ_KEY=;
+let token=localStorage.getItem('interview_token')||null;
+let currentUser=localStorage.getItem('interview_user')||null;
+let sessionId=null;
+let qaHistory=[];
+
+function showAlert(id,msg,type='error'){document.getElementById(id).innerHTML=`<div class="alert alert-${type}">${msg}</div>`;}
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+}
+function toggleAuthForm(){
+  const lf=document.getElementById('loginForm'),rf=document.getElementById('registerForm');
+  lf.style.display=lf.style.display==='none'?'flex':'none';
+  rf.style.display=rf.style.display==='none'?'flex':'none';
+}
+function updateUserUI(){
+  if(token&&currentUser){
+    document.getElementById('userChip').style.display='flex';
+    document.getElementById('userEmail').textContent=currentUser;
+    document.getElementById('avatarInitials').textContent=currentUser[0].toUpperCase();
+    document.getElementById('startBtn').disabled=false;
+  } else {
+    document.getElementById('userChip').style.display='none';
+    document.getElementById('startBtn').disabled=true;
+  }
+}
+async function register(){
+  const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const password=document.getElementById('regPassword').value;
+  if(!name||!email||!password) return showAlert('registerAlert','Please fill all fields.');
+  try{
+    const r=await fetch(`${API}/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({full_name:name,email,password,role:'student'})});
+    const d=await r.json();
+    if(!r.ok) return showAlert('registerAlert',d.detail||'Registration failed.');
+    showAlert('registerAlert','Account created! Please sign in.','success');
+    setTimeout(()=>toggleAuthForm(),1200);
+  }catch(e){showAlert('registerAlert','Cannot connect to server.');}
+}
+async function login(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  if(!email||!password) return showAlert('loginAlert','Please enter email and password.');
+  const btn=document.querySelector('#loginForm .btn-primary');
+  btn.innerHTML='<span class="loader"></span>Signing in...';btn.disabled=true;
+  try{
+    const r=await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const d=await r.json();
+    if(!r.ok){btn.innerHTML='Sign In';btn.disabled=false;return showAlert('loginAlert',d.detail||'Login failed.');}
+    token=d.access_token;currentUser=email;
+    localStorage.setItem('interview_token',token);localStorage.setItem('interview_user',email);
+    updateUserUI();
+    showAlert('loginAlert','Logged in successfully!','success');
+    setTimeout(()=>switchTab('interview'),800);
+  }catch(e){btn.innerHTML='Sign In';btn.disabled=false;showAlert('loginAlert','Cannot connect to server.');}
+}
+function logout(){
+  token=null;currentUser=null;sessionId=null;qaHistory=[];
+  localStorage.removeItem('interview_token');localStorage.removeItem('interview_user');
+  updateUserUI();
+  document.getElementById('sessionInfo').textContent='No session active';
+  document.getElementById('interviewArea').style.display='none';
+  document.getElementById('noSession').style.display='block';
+  document.getElementById('historyList').innerHTML='<div style="font-size:13px;color:var(--muted)">No questions yet</div>';
+  switchTab('auth');
+}
+async function startSession(){
+  if(!token) return;
+  const role=document.getElementById('roleTitle').value.trim();
+  const jd=document.getElementById('jobDesc').value.trim();
+  if(!role) return alert('Please enter a role title.');
+  const btn=document.getElementById('startBtn');
+  btn.innerHTML='<span class="loader"></span>Starting...';btn.disabled=true;
+  try{
+    const r=await fetch(`${API}/interview/start`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({role_title:role,job_description:jd||'General interview'})});
+    const d=await r.json();
+    if(!r.ok){btn.innerHTML='Start Interview';btn.disabled=false;return alert(d.detail||'Failed to start session.');}
+    sessionId=d.session_id||d.id||d.interview_id||Object.values(d)[0];
+    document.getElementById('sessionRole').textContent=role;
+    document.getElementById('sessionDesc').textContent=jd?jd.slice(0,60)+'...':'General Interview';
+    document.getElementById('sessionIdBadge').textContent='ID: '+(sessionId||'').toString().slice(0,8)+'...';
+    document.getElementById('sessionInfo').innerHTML=`<div style="font-size:13px"><span style="color:var(--green)">●</span> <strong style="color:var(--text)">${role}</strong><br/><span style="color:var(--muted);font-size:11px;font-family:monospace">${(sessionId||'').toString().slice(0,16)}...</span></div>`;
+    document.getElementById('noSession').style.display='none';
+    document.getElementById('interviewArea').style.display='flex';
+    btn.innerHTML='Session Active';
+    switchTab('interview');
+  }catch(e){btn.innerHTML='Start Interview';btn.disabled=false;alert('Cannot connect to server.');}
+}
+async function generateQuestion(){
+  if(!sessionId) return alert('Start a session first.');
+  const role=document.getElementById('roleTitle').value.trim()||'Software Engineer';
+  const jd=document.getElementById('jobDesc').value.trim()||'';
+  const btn=document.getElementById('genBtn');
+  btn.textContent='...';btn.disabled=true;
+  try{
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[{role:'user',content:`Generate ONE concise interview question for a ${role} role. JD: ${jd.slice(0,300)}. Return only the question, nothing else.`}],
+        max_tokens:100
+      })
+    });
+    const d=await r.json();
+    const q=d.choices?.[0]?.message?.content?.trim();
+    if(q){
+      document.getElementById('questionInput').value=q;
+      document.getElementById('questionText').textContent=q;
+    }
+  }catch(e){alert('Could not generate question.');}
+  btn.textContent='Generate ✦';btn.disabled=false;
+}
+async function submitAnswer(){
+  if(!sessionId) return alert('Start a session first.');
+  const question=document.getElementById('questionInput').value.trim();
+  const answer=document.getElementById('answerInput').value.trim();
+  if(!question||!answer) return alert('Please enter both a question and your answer.');
+  document.getElementById('questionText').textContent=question;
+  const btn=document.getElementById('submitBtn');
+  btn.innerHTML='<span class="loader"></span>Analyzing...';btn.disabled=true;
+  document.getElementById('feedbackArea').innerHTML='';
+  try{
+    const r=await fetch(`${API}/interview/answer`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({session_id:sessionId,question,answer})});
+    const d=await r.json();
+    if(!r.ok){btn.innerHTML='Get AI Feedback';btn.disabled=false;return alert(d.detail||'Error submitting answer.');}
+    renderFeedback(d,question,answer);
+    qaHistory.push({question,answer,feedback:d});
+    updateHistory();
+    btn.innerHTML='Get AI Feedback';btn.disabled=false;
+    document.getElementById('answerInput').value='';
+    document.getElementById('questionInput').value='';
+  }catch(e){btn.innerHTML='Get AI Feedback';btn.disabled=false;alert('Cannot connect to server.');}
+}
+function renderFeedback(d,q,a){
+  const score=d.score??d.rating??d.overall_score??'—';
+  const scoreColor=score>=7?'var(--green)':score>=5?'#f59e0b':'var(--red)';
+  const strengths=d.strengths||d.positive_feedback||d.good_points||'';
+  const improvements=d.improvements||d.areas_for_improvement||d.suggestions||'';
+  const starFeedback=d.star_feedback||d.star_method||d.structured_feedback||'';
+  const general=d.feedback||d.general_feedback||d.comments||'';
+  document.getElementById('feedbackArea').innerHTML=`
+    <div class="feedback-card">
+      <h3>AI Feedback</h3>
+      <div class="score-row">
+        <div class="score-circle" style="border-color:${scoreColor};color:${scoreColor}">${score}${typeof score==='number'?'/10':''}</div>
+        <div class="score-label"><strong>Performance Score</strong>Based on clarity, depth, and relevance</div>
+      </div>
+      ${general?`<div class="feedback-section"><h4>Overall Feedback</h4><p>${general}</p></div>`:''}
+      ${strengths?`<div class="feedback-section"><h4>Strengths</h4><p>${strengths}</p></div>`:''}
+      ${improvements?`<div class="feedback-section"><h4>Areas to Improve</h4><p>${improvements}</p></div>`:''}
+      ${starFeedback?`<div class="feedback-section"><h4>STAR Method Analysis</h4><p>${starFeedback}</p></div>`:''}
+    </div>`;
+}
+function updateHistory(){
+  const list=document.getElementById('historyList');
+  if(qaHistory.length===0){list.innerHTML='<div style="font-size:13px;color:var(--muted)">No questions yet</div>';return;}
+  list.innerHTML=qaHistory.slice().reverse().map((item,i)=>`
+    <div class="history-item" onclick="loadHistory(${qaHistory.length-1-i})">
+      <div class="q">${item.question.slice(0,55)}${item.question.length>55?'...':''}</div>
+      <div class="meta">Score: ${item.feedback?.score??item.feedback?.rating??'—'} · Click to review</div>
+    </div>`).join('');
+}
+function loadHistory(idx){
+  const item=qaHistory[idx];
+  document.getElementById('questionText').textContent=item.question;
+  document.getElementById('questionInput').value=item.question;
+  renderFeedback(item.feedback,item.question,item.answer);
+  switchTab('interview');
+}
+async function loadReport(){
+  if(!sessionId||!token) return;
+  try{
+    const r=await fetch(`${API}/interview/report/${sessionId}`,{headers:{'Authorization':'Bearer '+token}});
+    const d=await r.json();
+    if(!r.ok) return;
+    document.getElementById('noReport').style.display='none';
+    document.getElementById('reportArea').style.display='flex';
+    const total=d.total_questions??qaHistory.length;
+    const avg=d.average_score??(qaHistory.reduce((s,i)=>s+(i.feedback?.score||0),0)/Math.max(qaHistory.length,1)).toFixed(1);
+    document.getElementById('reportMetrics').innerHTML=`
+      <div class="metric-card"><div class="val">${total}</div><div class="lbl">Questions Answered</div></div>
+      <div class="metric-card"><div class="val">${avg}</div><div class="lbl">Average Score</div></div>`;
+    if(d.answers||d.feedback_list){
+      const answers=d.answers||d.feedback_list||[];
+      document.getElementById('reportAnswers').innerHTML=answers.map(a=>`
+        <div class="feedback-card"><div class="question-label">Question</div>
+        <p style="font-size:14px;margin:.5rem 0 1rem">${a.question||'—'}</p>
+        <div style="font-size:13px;color:var(--muted)">${a.feedback||a.general_feedback||''}</div></div>`).join('');
+    }
+  }catch(e){}
+}
+document.getElementById('tab-report').addEventListener('click',()=>loadReport());
+updateUserUI();
+</script>
+</body>
+</html>
