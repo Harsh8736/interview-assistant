@@ -14,13 +14,12 @@ class Interview(Base):
     user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
     role_title: Mapped[str] = mapped_column(String, nullable=False)
     job_description: Mapped[str] = mapped_column(Text, nullable=False)
-    status: Mapped[str] = mapped_column(String, default="active")  # active, completed
+    status: Mapped[str] = mapped_column(String, default="active")
     total_score: Mapped[float] = mapped_column(Float, nullable=True)
     final_report: Mapped[dict] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     completed_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
-    # Relationship
     answers: Mapped[list["InterviewAnswer"]] = relationship(
         "InterviewAnswer", back_populates="interview"
     )
@@ -42,5 +41,22 @@ class InterviewAnswer(Base):
     feedback: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    # Relationship
     interview: Mapped["Interview"] = relationship("Interview", back_populates="answers")
+
+
+class ResumeAnalysis(Base):
+    __tablename__ = "resume_analyses"
+
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
+    interview_id: Mapped[str] = mapped_column(
+        String, ForeignKey("interviews.id"), nullable=True
+    )
+    role_title: Mapped[str] = mapped_column(String, nullable=False)
+    resume_text: Mapped[str] = mapped_column(Text, nullable=False)
+    job_description: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence_score: Mapped[float] = mapped_column(Float, nullable=True)
+    analysis_result: Mapped[dict] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

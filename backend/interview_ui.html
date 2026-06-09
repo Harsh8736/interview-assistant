@@ -10,7 +10,7 @@
   :root{
     --bg:#0d0f14;--surface:#161921;--surface2:#1e2230;--border:#2a2f3d;
     --accent:#4f8ef7;--accent2:#7c3aed;--text:#e8eaf0;--muted:#7a7f94;
-    --green:#22c55e;--red:#ef4444;--radius:12px;
+    --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--radius:12px;
   }
   body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:var(--surface)}
@@ -79,6 +79,33 @@
   .divider{border:none;border-top:1px solid var(--border)}
   .user-chip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);padding:6px 12px;border-radius:20px;font-size:13px}
   .avatar{width:26px;height:26px;border-radius:50%;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0}
+
+  /* Resume Analysis Styles */
+  .upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface)}
+  .upload-zone:hover{border-color:var(--accent);background:var(--surface2)}
+  .upload-zone.has-file{border-color:var(--green);background:#14311f22}
+  .upload-zone .icon{font-size:2rem;margin-bottom:.5rem;opacity:.6}
+  .upload-zone p{font-size:13px;color:var(--muted)}
+  .upload-zone strong{color:var(--text)}
+  .confidence-ring{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem}
+  .ring-value{font-size:3rem;font-weight:700;font-family:'DM Serif Display',serif}
+  .ring-label{font-size:12px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:1px}
+  .skill-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;margin:3px}
+  .skill-tag.matched{background:#14311f;color:var(--green);border:1px solid #1e4a2e}
+  .skill-tag.missing{background:#2d0f0f;color:#fca5a5;border:1px solid #3d1414}
+  .skill-tag.warning{background:#2d1f0f;color:#fbbf24;border:1px solid #3d2e14}
+  .validation-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .validation-row:last-child{border-bottom:none}
+  .validation-icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+  .vi-green{background:#14311f;color:var(--green)}
+  .vi-red{background:#2d0f0f;color:var(--red)}
+  .vi-yellow{background:#2d1f0f;color:var(--yellow)}
+  .analysis-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem}
+  .analysis-section h3{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:1rem;font-weight:600}
+  .progress-bar-wrap{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .progress-bar-bg{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+  .progress-bar-fill{height:100%;border-radius:3px;transition:width .5s}
+  .progress-label{font-size:12px;color:var(--muted);width:35px;text-align:right}
 </style>
 </head>
 <body>
@@ -128,9 +155,11 @@
     <div class="tabs">
       <div class="tab active" onclick="switchTab('auth')" id="tab-auth">Account</div>
       <div class="tab" onclick="switchTab('interview')" id="tab-interview">Interview</div>
+      <div class="tab" onclick="switchTab('resume')" id="tab-resume">Resume Analysis</div>
       <div class="tab" onclick="switchTab('report')" id="tab-report">Report</div>
     </div>
 
+    <!-- AUTH TAB -->
     <div class="tab-panel active" id="panel-auth">
       <div class="auth-card" id="loginForm">
         <h2>Welcome back</h2>
@@ -168,6 +197,7 @@
       </div>
     </div>
 
+    <!-- INTERVIEW TAB -->
     <div class="tab-panel" id="panel-interview">
       <div id="noSession" class="empty-state">
         <div class="icon">🎯</div>
@@ -199,6 +229,108 @@
       </div>
     </div>
 
+    <!-- RESUME ANALYSIS TAB -->
+    <div class="tab-panel" id="panel-resume">
+      <div id="noAuth-resume" class="empty-state" style="display:none">
+        <div class="icon">🔐</div>
+        <p>Please sign in to use Resume Analysis.</p>
+      </div>
+
+      <div id="resumeUploadArea" style="display:flex;flex-direction:column;gap:1.5rem">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem">
+          <h2 style="font-family:'DM Serif Display',serif;font-size:1.3rem;margin-bottom:.5rem">Resume Analysis</h2>
+          <p style="font-size:13px;color:var(--muted)">Upload your resume and paste a JD to get a 3-layer AI analysis — skill match, project match, and skill-to-project validation.</p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <div class="form-group">
+              <label>Role Title</label>
+              <input id="resumeRole" placeholder="e.g. Python Backend Engineer"/>
+            </div>
+            <div class="form-group">
+              <label>Job Description</label>
+              <textarea id="resumeJD" rows="6" placeholder="Paste the full job description here..."></textarea>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <div class="form-group">
+              <label>Resume (PDF only)</label>
+              <div class="upload-zone" id="uploadZone" onclick="document.getElementById('resumeFile').click()">
+                <div class="icon">📄</div>
+                <p><strong>Click to upload</strong> or drag & drop</p>
+                <p style="margin-top:4px;font-size:12px">PDF files only</p>
+              </div>
+              <input type="file" id="resumeFile" accept=".pdf" style="display:none" onchange="handleFileSelect(this)"/>
+            </div>
+          </div>
+        </div>
+
+        <div id="resumeAlert"></div>
+        <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeResume()" style="align-self:flex-start;padding:12px 24px">
+          Analyze Resume ✦
+        </button>
+      </div>
+
+      <!-- Results Area -->
+      <div id="resumeResults" style="display:none;flex-direction:column;gap:1.5rem">
+
+        <!-- Confidence Score -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;display:flex;align-items:center;gap:2rem">
+          <div class="confidence-ring">
+            <div class="ring-value" id="confidenceScore" style="color:var(--accent)">—</div>
+            <div class="ring-label">Confidence Score</div>
+          </div>
+          <div style="flex:1">
+            <h3 style="font-family:'DM Serif Display',serif;font-size:1.2rem;margin-bottom:.5rem" id="resumeRoleTitle">—</h3>
+            <div id="scoreBreakdown" style="display:flex;flex-direction:column;gap:8px;margin-top:1rem"></div>
+          </div>
+        </div>
+
+        <!-- 3 Layer Grid -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+
+          <!-- Skill-JD Match -->
+          <div class="analysis-section">
+            <h3>Skill → JD Match</h3>
+            <div id="skillJDMatch"></div>
+          </div>
+
+          <!-- Project-JD Match -->
+          <div class="analysis-section">
+            <h3>Project → JD Match</h3>
+            <div id="projectJDMatch"></div>
+          </div>
+        </div>
+
+        <!-- Skill-Project Validation -->
+        <div class="analysis-section">
+          <h3>Skill → Project Validation</h3>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:1rem">Are your skills backed by actual project evidence?</p>
+          <div id="skillProjectValidation"></div>
+        </div>
+
+        <!-- Gap Analysis -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">
+          <div class="analysis-section">
+            <h3>⚠️ Critical Gaps</h3>
+            <div id="criticalGaps"></div>
+          </div>
+          <div class="analysis-section">
+            <h3>✅ Strengths</h3>
+            <div id="strengths"></div>
+          </div>
+          <div class="analysis-section">
+            <h3>💡 Recommendations</h3>
+            <div id="recommendations"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-ghost" onclick="resetResume()" style="align-self:flex-start">← Analyze Another Resume</button>
+      </div>
+    </div>
+
+    <!-- REPORT TAB -->
     <div class="tab-panel" id="panel-report">
       <div id="noReport" class="empty-state">
         <div class="icon">📊</div>
@@ -212,16 +344,18 @@
         <div id="reportAnswers" style="display:flex;flex-direction:column;gap:1rem"></div>
       </div>
     </div>
+
   </div>
 </div>
 
 <script>
 const API='http://localhost:8000/api/v1';
-const GROQ_KEY=;
+const GROQ_KEY="";
 let token=localStorage.getItem('interview_token')||null;
 let currentUser=localStorage.getItem('interview_user')||null;
 let sessionId=null;
 let qaHistory=[];
+let selectedFile=null;
 
 function showAlert(id,msg,type='error'){document.getElementById(id).innerHTML=`<div class="alert alert-${type}">${msg}</div>`;}
 function switchTab(name){
@@ -246,6 +380,165 @@ function updateUserUI(){
     document.getElementById('startBtn').disabled=true;
   }
 }
+
+// File upload handler
+function handleFileSelect(input){
+  const file=input.files[0];
+  if(!file) return;
+  if(!file.name.endsWith('.pdf')){
+    showAlert('resumeAlert','Only PDF files are supported.','error');
+    return;
+  }
+  selectedFile=file;
+  const zone=document.getElementById('uploadZone');
+  zone.classList.add('has-file');
+  zone.innerHTML=`<div class="icon">✅</div><p><strong>${file.name}</strong></p><p style="margin-top:4px;font-size:12px;color:var(--green)">${(file.size/1024).toFixed(1)} KB — Ready to analyze</p>`;
+}
+
+// Drag and drop
+const uploadZone=document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover',e=>{e.preventDefault();uploadZone.style.borderColor='var(--accent)';});
+uploadZone.addEventListener('dragleave',()=>{uploadZone.style.borderColor='var(--border)';});
+uploadZone.addEventListener('drop',e=>{
+  e.preventDefault();
+  const file=e.dataTransfer.files[0];
+  if(file){
+    document.getElementById('resumeFile').files=e.dataTransfer.files;
+    handleFileSelect(document.getElementById('resumeFile'));
+  }
+});
+
+async function analyzeResume(){
+  if(!token) return showAlert('resumeAlert','Please sign in first.','error');
+  if(!selectedFile) return showAlert('resumeAlert','Please upload a PDF resume.','error');
+  const role=document.getElementById('resumeRole').value.trim();
+  const jd=document.getElementById('resumeJD').value.trim();
+  if(!role) return showAlert('resumeAlert','Please enter a role title.','error');
+  if(!jd) return showAlert('resumeAlert','Please paste a job description.','error');
+
+  const btn=document.getElementById('analyzeBtn');
+  btn.innerHTML='<span class="loader"></span>Analyzing...';
+  btn.disabled=true;
+  document.getElementById('resumeAlert').innerHTML='';
+
+  try{
+    const formData=new FormData();
+    formData.append('file',selectedFile);
+    formData.append('role_title',role);
+    formData.append('job_description',jd);
+
+    const r=await fetch(`${API}/resume/analyze`,{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+token},
+      body:formData
+    });
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.detail||'Analysis failed');
+    renderResumeResults(d,role);
+  }catch(e){
+    showAlert('resumeAlert',e.message||'Failed to analyze resume.','error');
+  }
+  btn.innerHTML='Analyze Resume ✦';
+  btn.disabled=false;
+}
+
+function renderResumeResults(data, role){
+  document.getElementById('resumeUploadArea').style.display='none';
+  document.getElementById('resumeResults').style.display='flex';
+
+  // Confidence score
+  const score=data.confidence_score||0;
+  const scoreColor=score>=70?'var(--green)':score>=50?'var(--yellow)':'var(--red)';
+  document.getElementById('confidenceScore').textContent=score+'%';
+  document.getElementById('confidenceScore').style.color=scoreColor;
+  document.getElementById('resumeRoleTitle').textContent=role;
+
+  // Score breakdown bars
+  const sm=data.skill_jd_match?.match_percentage||0;
+  const pm=data.project_jd_match?.match_percentage||0;
+  const spv=data.skill_project_validation
+    ? Math.round((data.skill_project_validation.filter(s=>s.backed_by_project).length/data.skill_project_validation.length)*100)
+    : 0;
+
+  document.getElementById('scoreBreakdown').innerHTML=`
+    <div class="progress-bar-wrap">
+      <span style="font-size:12px;color:var(--muted);width:140px">Skill → JD Match</span>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${sm}%;background:var(--accent)"></div></div>
+      <span class="progress-label">${sm}%</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <span style="font-size:12px;color:var(--muted);width:140px">Project → JD Match</span>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pm}%;background:var(--accent2)"></div></div>
+      <span class="progress-label">${pm}%</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <span style="font-size:12px;color:var(--muted);width:140px">Skills Backed by Projects</span>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${spv}%;background:var(--green)"></div></div>
+      <span class="progress-label">${spv}%</span>
+    </div>`;
+
+  // Skill-JD Match
+  const sjm=data.skill_jd_match||{};
+  document.getElementById('skillJDMatch').innerHTML=`
+    <div style="margin-bottom:1rem">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Matched Skills</div>
+      <div>${(sjm.matched_skills||[]).map(s=>`<span class="skill-tag matched">✓ ${s}</span>`).join('')||'<span style="color:var(--muted);font-size:13px">None</span>'}</div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Missing Skills</div>
+      <div>${(sjm.missing_skills||[]).map(s=>`<span class="skill-tag missing">✗ ${s}</span>`).join('')||'<span style="color:var(--green);font-size:13px">All matched!</span>'}</div>
+    </div>`;
+
+  // Project-JD Match
+  const pjm=data.project_jd_match||{};
+  document.getElementById('projectJDMatch').innerHTML=`
+    <div style="margin-bottom:1rem">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Relevant Projects</div>
+      <div style="display:flex;flex-direction:column;gap:4px">${(pjm.relevant_projects||[]).map(p=>`<div style="font-size:13px;color:var(--green)">✓ ${p}</div>`).join('')||'<span style="color:var(--muted);font-size:13px">None found</span>'}</div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Missing Project Areas</div>
+      <div style="display:flex;flex-direction:column;gap:4px">${(pjm.missing_project_areas||[]).map(p=>`<div style="font-size:13px;color:#fca5a5">✗ ${p}</div>`).join('')||'<span style="color:var(--green);font-size:13px">All covered!</span>'}</div>
+    </div>`;
+
+  // Skill-Project Validation
+  const spvData=data.skill_project_validation||[];
+  document.getElementById('skillProjectValidation').innerHTML=spvData.map(s=>{
+    const inSkills=s.in_skills_section;
+    const backed=s.backed_by_project;
+    const icon=inSkills&&backed?'vi-green':inSkills&&!backed?'vi-yellow':'vi-red';
+    const status=inSkills&&backed?'✓':inSkills&&!backed?'~':'✗';
+    return `
+      <div class="validation-row">
+        <div class="validation-icon ${icon}">${status}</div>
+        <div style="flex:1">
+          <span style="font-size:14px;font-weight:500">${s.skill}</span>
+          ${s.project_evidence?`<span style="font-size:12px;color:var(--muted);margin-left:8px">→ ${s.project_evidence}</span>`:''}
+        </div>
+        <div style="font-size:11px;color:var(--muted)">${backed?'Project backed':'No project evidence'}</div>
+      </div>`;
+  }).join('');
+
+  // Gap Analysis
+  const ga=data.gap_analysis||{};
+  document.getElementById('criticalGaps').innerHTML=(ga.critical_gaps||[]).map(g=>`<div style="font-size:13px;color:#fca5a5;padding:4px 0;border-bottom:1px solid var(--border)">• ${g}</div>`).join('')||'<span style="color:var(--green);font-size:13px">No critical gaps!</span>';
+  document.getElementById('strengths').innerHTML=(ga.strengths||[]).map(g=>`<div style="font-size:13px;color:var(--green);padding:4px 0;border-bottom:1px solid var(--border)">• ${g}</div>`).join('')||'—';
+  document.getElementById('recommendations').innerHTML=(ga.recommendations||[]).map(g=>`<div style="font-size:13px;color:var(--yellow);padding:4px 0;border-bottom:1px solid var(--border)">• ${g}</div>`).join('')||'—';
+}
+
+function resetResume(){
+  selectedFile=null;
+  document.getElementById('resumeUploadArea').style.display='flex';
+  document.getElementById('resumeResults').style.display='none';
+  document.getElementById('resumeRole').value='';
+  document.getElementById('resumeJD').value='';
+  document.getElementById('resumeFile').value='';
+  document.getElementById('resumeAlert').innerHTML='';
+  const zone=document.getElementById('uploadZone');
+  zone.classList.remove('has-file');
+  zone.innerHTML=`<div class="icon">📄</div><p><strong>Click to upload</strong> or drag & drop</p><p style="margin-top:4px;font-size:12px">PDF files only</p>`;
+}
+
 async function register(){
   const name=document.getElementById('regName').value.trim();
   const email=document.getElementById('regEmail').value.trim();
@@ -326,10 +619,7 @@ async function generateQuestion(){
     });
     const d=await r.json();
     const q=d.choices?.[0]?.message?.content?.trim();
-    if(q){
-      document.getElementById('questionInput').value=q;
-      document.getElementById('questionText').textContent=q;
-    }
+    if(q){document.getElementById('questionInput').value=q;document.getElementById('questionText').textContent=q;}
   }catch(e){alert('Could not generate question.');}
   btn.textContent='Generate ✦';btn.disabled=false;
 }
@@ -357,9 +647,6 @@ async function submitAnswer(){
 function renderFeedback(d,q,a){
   const score=d.score??d.rating??d.overall_score??'—';
   const scoreColor=score>=7?'var(--green)':score>=5?'#f59e0b':'var(--red)';
-  const strengths=d.strengths||d.positive_feedback||d.good_points||'';
-  const improvements=d.improvements||d.areas_for_improvement||d.suggestions||'';
-  const starFeedback=d.star_feedback||d.star_method||d.structured_feedback||'';
   const general=d.feedback||d.general_feedback||d.comments||'';
   document.getElementById('feedbackArea').innerHTML=`
     <div class="feedback-card">
@@ -369,9 +656,6 @@ function renderFeedback(d,q,a){
         <div class="score-label"><strong>Performance Score</strong>Based on clarity, depth, and relevance</div>
       </div>
       ${general?`<div class="feedback-section"><h4>Overall Feedback</h4><p>${general}</p></div>`:''}
-      ${strengths?`<div class="feedback-section"><h4>Strengths</h4><p>${strengths}</p></div>`:''}
-      ${improvements?`<div class="feedback-section"><h4>Areas to Improve</h4><p>${improvements}</p></div>`:''}
-      ${starFeedback?`<div class="feedback-section"><h4>STAR Method Analysis</h4><p>${starFeedback}</p></div>`:''}
     </div>`;
 }
 function updateHistory(){
@@ -380,7 +664,7 @@ function updateHistory(){
   list.innerHTML=qaHistory.slice().reverse().map((item,i)=>`
     <div class="history-item" onclick="loadHistory(${qaHistory.length-1-i})">
       <div class="q">${item.question.slice(0,55)}${item.question.length>55?'...':''}</div>
-      <div class="meta">Score: ${item.feedback?.score??item.feedback?.rating??'—'} · Click to review</div>
+      <div class="meta">Score: ${item.feedback?.score??'—'} · Click to review</div>
     </div>`).join('');
 }
 function loadHistory(idx){
@@ -399,16 +683,15 @@ async function loadReport(){
     document.getElementById('noReport').style.display='none';
     document.getElementById('reportArea').style.display='flex';
     const total=d.total_questions??qaHistory.length;
-    const avg=d.average_score??(qaHistory.reduce((s,i)=>s+(i.feedback?.score||0),0)/Math.max(qaHistory.length,1)).toFixed(1);
+    const avg=d.total_score??(qaHistory.reduce((s,i)=>s+(i.feedback?.score||0),0)/Math.max(qaHistory.length,1)).toFixed(1);
     document.getElementById('reportMetrics').innerHTML=`
       <div class="metric-card"><div class="val">${total}</div><div class="lbl">Questions Answered</div></div>
       <div class="metric-card"><div class="val">${avg}</div><div class="lbl">Average Score</div></div>`;
-    if(d.answers||d.feedback_list){
-      const answers=d.answers||d.feedback_list||[];
-      document.getElementById('reportAnswers').innerHTML=answers.map(a=>`
-        <div class="feedback-card"><div class="question-label">Question</div>
+    if(d.answers){
+      document.getElementById('reportAnswers').innerHTML=d.answers.map(a=>`
+        <div class="feedback-card"><div class="question-label">Question ${a.question_number}</div>
         <p style="font-size:14px;margin:.5rem 0 1rem">${a.question||'—'}</p>
-        <div style="font-size:13px;color:var(--muted)">${a.feedback||a.general_feedback||''}</div></div>`).join('');
+        <div style="font-size:13px;color:var(--muted)">${a.feedback||''}</div></div>`).join('');
     }
   }catch(e){}
 }
